@@ -88,7 +88,7 @@ Key research finding:
 
 ## Results snapshot
 Best models achieved approximately:
-- **NDCG@10 ~ 0.04** (candidate ranking, C=1000, 10k users sampled)
+- **NDCG@10 ~ 0.04** (candidate ranking, C=1000, 10k users sampled, structure-only).
 
 Exact results and discussion are in the final report notebook.
 
@@ -125,7 +125,8 @@ It contains:
 ---
 
 ## Comparison with a Hybrid Recommender System
-In previous work, we built a production-oriented hybrid recommender system (ALS + SBERT + CatBoost).
+In previous work, we built a production-oriented hybrid recommender system (ALS + SBERT + CatBoost) -
+https://github.com/KonNik88/hybrid-book-recommender-system.
 It differs fundamentally from the GNN-based models explored here:
 
 | Aspect | Hybrid Recommender | GNN-based Recommender |
