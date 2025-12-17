@@ -1,113 +1,153 @@
-# Graph Neural Networks: Node Classification & Link Prediction (Demo)
+# Graph Neural Networks: from Demo Graphs to a Real Recommender System
 ![License](https://img.shields.io/github/license/KonNik88/gnn-node-link-pytorch)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange)
 ![PyG](https://img.shields.io/badge/PyTorch%20Geometric-2.x-green)
 
-Minimal but complete project on **Graph Neural Networks (GNNs)** with [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/). This is the **demo tier** (Cora/PubMed) to validate code, training loop, and metrics before moving to a real-world graph project (e.g., user–item recommendations with GNN).
+This repository contains **two tiers** of work with Graph Neural Networks (PyTorch Geometric):
 
-## Idea
-Show how GNNs work on **citation graphs** (Cora, PubMed) for two canonical tasks:
-- **Node classification** — predict a paper’s research field using graph structure + features.
-- **Link prediction** — predict whether a citation edge should exist between two papers.
+1) **Demo / Sandbox tier (Planetoid: Cora/PubMed)**  
+   Small graphs used to validate training loops, metrics, and core GNN workflow.
 
-We compare simple baselines (LogReg, MLP) to structural models (GCN, GraphSAGE, GAT) and include **explainability** (GNNExplainer). The goal is a compact, reproducible, portfolio‑ready demo.
+2) **Real-world tier: Graph-based Recommender System (Goodbooks-10k)**  
+   A recommendation pipeline on a large user–item graph with **leave-one-out (LOO)** evaluation, sampling-based training, and architecture benchmarks.
 
----
-
-## What's inside
-- **Datasets**: Cora (default), PubMed
-- **Tasks**:
-  - Node classification
-  - Link prediction
-- **Models**:
-  - Baselines: Logistic Regression / MLP
-  - GCN (Graph Convolutional Network)
-  - GraphSAGE
-  - GAT (Graph Attention Network)
-- **Interpretability**: GNNExplainer
-- **Reproducibility**: fixed splits, random seed, environment.yml
+The demo tier is useful as a minimal reference. The main value of the repo is the **real-world recommender system** in `graph_recsys/`.
 
 ---
 
-## Project structure
-```
+## Repository layout
+
+```text
 .
-├─ src/
-│  ├─ data.py           # dataset loading
-│  ├─ models/           # GCN, GraphSAGE, GAT
-│  ├─ train_node.py     # node classification training
-│  ├─ train_link.py     # link prediction training
-│  ├─ explain.py        # GNNExplainer examples
-│  └─ utils.py          # helpers (seed, logger, early stopping)
-├─ configs/             # configs (Hydra or argparse)
-├─ notebooks/           # EDA and visualization
-├─ artifacts/           # checkpoints, logs
-├─ environment.yml
-├─ requirements.txt
-├─ Dockerfile
+├─ notebooks/                 # demo notebooks (Planetoid sandbox)
+├─ data/                      # demo data (optional)
+├─ artifacts/                 # demo outputs (optional)
+├─ archive/                   # old / deprecated files (not tracked)
+├─ graph_recsys/              # ✅ main project: book recommender (Goodbooks-10k)
+│  ├─ notebooks/              # experiments: Graph3, sampling models, eval
+│  ├─ data_raw/               # raw Goodbooks-10k files (local)
+│  ├─ data_processed/         # processed splits, mappings, graph bundles (local)
+│  └─ artifacts/              # runs, histories, checkpoints, summaries (local)
 └─ README.md
 ```
 
----
-
-## Quickstart
-
-1) Create environment
-```bash
-conda env create -f environment.yml
-conda activate gnn
-```
-
-2) Install requirements
-```bash
-pip install -r requirements.txt
-```
-
-3) Run node classification on Cora (GCN)
-```bash
-python -m src.train_node --dataset Cora --model gcn --hid 64 --lr 0.003 --dropout 0.5 --epochs 300 --seed 42
-```
-
-4) Run link prediction on Cora
-```bash
-python -m src.train_link --dataset Cora --model gcn --hid 64 --epochs 200
-```
-
-> Tip: For **PubMed**, increase `--epochs` and consider lowering `--lr` a bit.
+> Note: this repo is intentionally **not package-first**. It is a **research notebook workflow** with artifacts saved to disk.
 
 ---
 
-## Expected results (reference)
+## Tier 1 — Demo / Sandbox (Planetoid)
 
-| Model     | Cora (Acc) | PubMed (Acc) |
-|-----------|------------|--------------|
-| MLP (bow) | ~0.58–0.62 | ~0.70–0.73   |
-| GCN       | ~0.80–0.83 | ~0.78–0.81   |
-| GraphSAGE | ~0.80–0.84 | ~0.79–0.82   |
-| GAT       | ~0.82–0.85 | ~0.79–0.82   |
+### Goals
+- Validate PyG setup and core GNN workflow
+- Node classification and basic link prediction on small citation graphs
+- Quick sanity checks before scaling to a real graph
 
-For link prediction on Cora, **ROC-AUC > 0.90** is typically achievable (dot-product scoring over node embeddings).
+This tier lives in the repo root (`notebooks/`, `data/`, `artifacts/`).
 
 ---
 
-## Reproducibility
-- `seed=42`
-- Fixed Planetoid dataset splits
-- Tested with:
-  - Python 3.10
-  - PyTorch 2.x
-  - PyTorch Geometric 2.x
+## Tier 2 — Real-world project: `graph_recsys/` (Goodbooks-10k)
+
+### Problem
+Build and compare GNN recommenders for **book recommendation** on Goodbooks-10k.
+
+### Graph (Graph3 reference)
+We use an augmented graph where core signal is:
+- **user–book interactions** (train only)
+
+and we add book metadata relations:
+- book–tag
+- book–author
+- book–language
+- book–year_bin
+- optional book–book similarity edges (e.g., TF-IDF cosine)
+
+Graph3 is treated as a **reference pipeline**: same splits, same evaluation protocol, fair comparison.
+
+### Evaluation
+- **Leave-one-out (LOO)** split (one positive per user for validation and one for test)
+- Candidate ranking with:
+  - C = 1000 (10k users sampled)
+  - C = 2000 (10k users sampled)
+- Metrics:
+  - Hit@10/20/50
+  - NDCG@10/20/50
+
+### Models benchmarked (this cycle)
+- GraphSAGE + neighbor sampling + BPR
+- GAT + neighbor sampling + BPR
+- TransformerConv + neighbor sampling + BPR
+- PinSAGE-style random-walk sampling + BPR
+- R-GCN (tested as a negative baseline due to objective mismatch)
+
+Key research finding:
+> Ranking objective alignment (BPR) + sampling strategy matters more than architectural complexity alone.
 
 ---
 
-## Next steps (real-world tier)
-- Graph recommenders on **Goodbooks-10k** (user–item bipartite graph), link prediction with GraphSAGE.
-- PPI or molecular graphs (QM9) for property prediction.
-- OGB datasets with neighbor sampling (scalability).
-- Advanced explainability (PGExplainer) and CI (lint + tests).
+## Results snapshot
+Best models achieved approximately:
+- **NDCG@10 ~ 0.04** (candidate ranking, C=1000, 10k users sampled)
+
+Exact results and discussion are in the final report notebook.
+
+---
+
+## How to run
+This repo is notebook-driven.
+
+1) Open notebooks:
+- `notebooks/` (demo tier)
+- `graph_recsys/notebooks/` (real-world tier)
+
+2) In each notebook, update `PROJECT_ROOT` / `BUNDLE_DIR` in the first cell if needed.
+
+---
+
+## Final report
+The project conclusion and research summary:
+- `graph_recsys/notebooks/09_final_eval_and_report.ipynb`
+
+It contains:
+- unified comparison table (manual, research-grade)
+- key findings and failure modes
+- limitations and future work roadmap
+
+---
+
+## Future work (recorded for v2)
+- relation ablation study (which edges help vs add noise)
+- true heterogeneous GNNs: HeteroConv / HGT
+- text-augmented node features for books (SBERT/MiniLM embeddings)
+- self-supervised pretraining (masked edges / contrastive)
+
+---
+
+## Comparison with a Hybrid Recommender System
+In previous work, we built a production-oriented hybrid recommender system (ALS + SBERT + CatBoost).
+It differs fundamentally from the GNN-based models explored here:
+
+| Aspect | Hybrid Recommender | GNN-based Recommender |
+|------|-------------------|-----------------------|
+| Core idea | Feature-based ranking | Representation learning |
+| Candidate generation | ALS + vector search | Implicit via graph |
+| Features | Explicit (TF-IDF, SBERT, metadata) | Structural only (this project) |
+| Model | CatBoost (tree ensemble) | GraphSAGE / GAT / PinSAGE |
+| Training objective | Classification / ranking | Pairwise ranking (BPR) |
+| Cold start | Strong (content features) | Weak without text features |
+| Scalability | High (modular) | High with sampling |
+| Interpretability | High | Low–medium |
+
+Absolute metric values are not directly comparable due to different candidate pools and feature availability.
+However, both systems operate in a candidate-ranking setting:
+- the hybrid system is expected to achieve higher ranking quality due to explicit content features and a supervised ranker,
+- the GNN system demonstrates competitive ranking using only interaction structure and graph connectivity.
+
+Hybrid systems win today through feature richness and engineering.
+GNN-based systems win through representation learning and long-term extensibility.
 
 ---
 
 ## License
-[MIT](LICENSE)
+MIT — see [LICENSE](LICENSE)
